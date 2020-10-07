@@ -11,12 +11,12 @@ in docstrings of UnitTest.test_* methods) and displaying them as a single
 list.
 '''
 
-requires = ['Sphinx>=0.6']
+requires = ['Sphinx>=3']
 
 setup(
     name='sphinxcontrib-requirements',
-    version='0.1',
-    url='http://bitbucket.org/neithere/sphinx-contrib-requirements',
+    version='0.2',
+    url='https://github.com/sphinx-contrib/requirements',
     download_url='http://pypi.python.org/pypi/sphinxcontrib-requirements',
     license='BSD',
     author='Andrey Mikhaylenko',
