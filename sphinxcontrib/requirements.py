@@ -93,6 +93,7 @@ class ReqDirective(SphinxDirective):
     # this enables content in the directive
     has_content = True
 
+    # TODO: Make this a configurable list in the Sphinx conf.py
     def req_status(argument):
         return directives.choice(argument, (
             'undecided',
@@ -105,7 +106,7 @@ class ReqDirective(SphinxDirective):
 
     option_spec = {
         'status': req_status,
-        'reference': directives.unchanged_required,
+        'reference': directives.unchanged,
 #        'done': directives.flag,
 #        'important': directives.flag,
     }
