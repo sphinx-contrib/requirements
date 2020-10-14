@@ -56,10 +56,14 @@ The extension is partially based on sphinx.ext.todo_.
 import os
 from docutils.parsers.rst import roles, directives
 from docutils import nodes, utils
-from sphinx.environment import NoUri
+from sphinx.errors import NoUri
 from sphinx.locale import _
-from sphinx.util.compat import Directive, make_admonition
+from docutils.parsers.rst import Directive
 from sphinx.util.osutil import copyfile
+from sphinx.util.docutils import SphinxDirective
+from sphinx.util import logging
+
+logger = logging.getLogger(__name__)
 
 
 CSS_FILE = 'requirements.css'
@@ -74,7 +78,7 @@ def status_role(name, rawtext, text, lineno, inliner, options=None, content=[]):
     return [node], []
 
 
-class req_node(nodes.Admonition, nodes.Element): pass
+class req(nodes.Admonition, nodes.Element): pass
 class reqlist(nodes.General, nodes.Element): pass
 
 
@@ -84,13 +88,25 @@ class ReqlistDirective(Directive):
         return [reqlist('')]
 
 
-class ReqDirective(Directive):
+class ReqDirective(SphinxDirective):
 
     # this enables content in the directive
     has_content = True
 
+    # TODO: Make this a configurable list in the Sphinx conf.py
+    def req_status(argument):
+        return directives.choice(argument, (
+            'undecided',
+            'todo',
+            'done',
+            'tested',
+            'wontfix'
+            )
+        )
+
     option_spec = {
-        'status': unicode,
+        'status': req_status,
+        'reference': directives.unchanged,
 #        'done': directives.flag,
 #        'important': directives.flag,
     }
@@ -107,18 +123,17 @@ class ReqDirective(Directive):
         #   * add config var to define whether the status should be displayed
         #     (e.g. always / never / if explicitly given)
         #
-        # insert a large garden gnome^W^W^W^W requirement status
+        # insert requirement status
         status = self.options.get('status', 'undecided')
         status_text = ':status:`'+status+'`'
-        self.content[0] = status_text +' '+ self.content[0]
+        self.content[0] = status_text +': '+ self.content[0]
 
-        # TODO: replace admonition with a paragraph
-        ad = make_admonition(req_node, self.name, [_('Requirement')], self.options,
-                             self.content, self.lineno, self.content_offset,
-                             self.block_text, self.state, self.state_machine)
+        req_node = req('\n'.join(self.content))
+        req_node += nodes.title(_('Requirement'), _('Requirement'))
+        self.state.nested_parse(self.content, self.content_offset, req_node)
 
-        ad[0].line = self.lineno
-        return [targetnode] + ad
+        return [targetnode, req_node]
+
 
 
 def process_reqs(app, doctree):
@@ -128,7 +143,7 @@ def process_reqs(app, doctree):
     env = app.builder.env
     if not hasattr(env, 'reqs_all_reqs'):
         env.reqs_all_reqs = []
-    for node in doctree.traverse(req_node):
+    for node in doctree.traverse(req):
         try:
             targetnode = node.parent[node.parent.index(node) - 1]
             if not isinstance(targetnode, nodes.target):
@@ -200,21 +215,21 @@ def depart_req_node(self, node):
     self.depart_admonition(node)
 
 def add_stylesheet(app):
-    app.add_stylesheet(CSS_FILE)
+    app.add_css_file(CSS_FILE)
 
 def copy_stylesheet(app, exception):
     if app.builder.name != 'html' or exception:
         return
-    app.info('Copying requirements stylesheet... ', nonl=True)
+    logger.info('Copying requirements stylesheet... ')
     dest = os.path.join(app.builder.outdir, '_static', CSS_FILE)
     source = os.path.join(os.path.abspath(os.path.dirname(__file__)), CSS_FILE)
     copyfile(source, dest)
-    app.info('done')
+    logger.info('Done')
 
 def setup(app):
     app.add_role('status', status_role)
     app.add_node(reqlist)
-    app.add_node(req_node,
+    app.add_node(req,
                  html=(visit_req_node, depart_req_node),
                  latex=(visit_req_node, depart_req_node),
                  text=(visit_req_node, depart_req_node),
