@@ -5,11 +5,11 @@ Requirement specs
 
 .. module:: sphinx_reqs
    :synopsis: Allow requirement specs into documents.
-.. moduleauthor:: Andrey Mikhaylenko
+.. moduleauthor:: Andrey Mikhaylenko, James Booker
 
 There are two additional directives when using this extension:
 
-.. rst:directive:: req
+.. rst:directive:: requirement
 
    Use this directive like, for example, :rst:dir:`note`. Note that all
    requirements get a status (this is not configurable yet). By default it is
@@ -93,22 +93,10 @@ class ReqDirective(SphinxDirective):
     # this enables content in the directive
     has_content = True
 
-    # TODO: Make this a configurable list in the Sphinx conf.py
-    def req_status(argument):
-        return directives.choice(argument, (
-            'undecided',
-            'todo',
-            'done',
-            'tested',
-            'wontfix'
-            )
-        )
-
     option_spec = {
-        'status': req_status,
+        'identifier': directives.unchanged,
+        'status': directives.unchanged,
         'reference': directives.unchanged,
-#        'done': directives.flag,
-#        'important': directives.flag,
     }
 
     def run(self):
@@ -123,10 +111,23 @@ class ReqDirective(SphinxDirective):
         #   * add config var to define whether the status should be displayed
         #     (e.g. always / never / if explicitly given)
         #
-        # insert requirement status
-        status = self.options.get('status', 'undecided')
-        status_text = ':status:`'+status+'`'
-        self.content[0] = status_text +': '+ self.content[0]
+        # insert identifier, if defined
+        identifier = self.options.get('identifier', None)
+        if identifier:
+            identifier_text = identifier +' '
+            self.content[0] = identifier_text + ': '+ self.content[0]
+        
+        # insert reference, if defined
+        reference = self.options.get('reference',None)
+        if reference:
+            reference_text = ' [ref: '+reference+']'
+            self.content[0] = self.content[0] + reference_text
+
+        # insert requirement status, if defined
+        status = self.options.get('status', None)
+        if status:
+            status_text = ':status:`'+status+'`'
+            self.content[0] = status_text +': '+ self.content[0]
 
         req_node = req('\n'.join(self.content))
         req_node += nodes.title(_('Requirement'), _('Requirement'))
@@ -243,3 +244,7 @@ def setup(app):
     app.connect('env-purge-doc', purge_reqs)
     app.connect('builder-inited', add_stylesheet)
     app.connect('build-finished', copy_stylesheet)
+
+    return {
+        'version': '0.3-dev'
+    }
