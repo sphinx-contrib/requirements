@@ -15,12 +15,12 @@ requires = ['Sphinx>=3']
 
 setup(
     name='sphinxcontrib-requirements',
-    version='0.2',
+    version='0.3',
     url='https://github.com/sphinx-contrib/requirements',
     download_url='http://pypi.python.org/pypi/sphinxcontrib-requirements',
     license='BSD',
-    author='Andrey Mikhaylenko',
-    author_email='neithere@gmail.com',
+    author='James Booker',
+    author_email='james.booker@gmail.com',
     description='Sphinx "requirements" extension',
     long_description=long_desc,
     zip_safe=False,
